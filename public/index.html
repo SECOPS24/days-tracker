@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Days Tracker</title>
+  <style>
+    :root {
+      --pink: #e91e8c;
+      --pink-light: #fce4ec;
+      --pink-mid: #f48fb1;
+      --purple: #9c27b0;
+      --bg: #fdf6fa;
+      --card: #fff;
+      --text: #333;
+      --muted: #888;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    header { background: linear-gradient(135deg, var(--pink), var(--purple)); color: #fff; padding: 1.5rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    header h1 { font-size: 1.6rem; font-weight: 700; }
+    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 0.2rem; }
+    .nav { display: flex; gap: 0.5rem; padding: 1rem 2rem; background: #fff; border-bottom: 1px solid #f0e0e8; overflow-x: auto; }
+    .nav button { padding: 0.5rem 1.2rem; border: 2px solid var(--pink-mid); border-radius: 20px; background: #fff; color: var(--pink); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .nav button.active, .nav button:hover { background: var(--pink); color: #fff; border-color: var(--pink); }
+    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: 0 2px 12px rgba(233,30,140,0.08); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .card h2 { font-size: 1.1rem; color: var(--pink); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; margin-top: 0.8rem; }
+    input, select, textarea { width: 100%; padding: 0.6rem 0.9rem; border: 1.5px solid #e0c8d8; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border 0.2s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--pink); }
+    .btn { display: inline-block; padding: 0.6rem 1.4rem; background: var(--pink); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; }
+    .btn:hover { background: var(--purple); }
+    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+    .btn-outline { background: #fff; color: var(--pink); border: 2px solid var(--pink); }
+    .btn-outline:hover { background: var(--pink-light); }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 140px; }
+    .cycle-list { list-style: none; }
+    .cycle-item { padding: 1rem; border: 1.5px solid #f0dde8; border-radius: 10px; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .cycle-item .dates { font-weight: 600; color: var(--pink); }
+    .cycle-item .meta { font-size: 0.82rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: var(--pink-light); color: var(--pink); margin: 0.1rem; }
+    .prediction-box { background: linear-gradient(135deg, #fce4ec, #f3e5f5); border-radius: var(--radius); padding: 1.2rem; }
+    .prediction-box .big { font-size: 1.4rem; font-weight: 700; color: var(--pink); }
+    .prediction-box .label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .symptom-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .symptom-btn { padding: 0.4rem 0.9rem; border: 2px solid var(--pink-mid); border-radius: 20px; background: #fff; color: var(--pink); cursor: pointer; font-size: 0.82rem; transition: all 0.15s; }
+    .symptom-btn.selected { background: var(--pink); color: #fff; border-color: var(--pink); }
+    .severity-row { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+    .sev-btn { width: 36px; height: 36px; border: 2px solid var(--pink-mid); border-radius: 50%; background: #fff; cursor: pointer; font-weight: 700; color: var(--pink); transition: all 0.15s; }
+    .sev-btn.sel { background: var(--pink); color: #fff; border-color: var(--pink); }
+    .hidden { display: none; }
+    .alert { padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .alert-success { background: #e8f5e9; color: #2e7d32; }
+    .alert-error { background: #ffebee; color: #c62828; }
+    .symptom-log-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f5e8ef; }
+    .symptom-log-item:last-child { border-bottom: none; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-cell { padding: 6px; text-align: center; border-radius: 6px; font-size: 0.8rem; cursor: default; min-height: 36px; display: flex; align-items: center; justify-content: center; }
+    .cal-cell.period { background: var(--pink); color: #fff; }
+    .cal-cell.predicted { background: var(--pink-light); color: var(--pink); border: 1.5px dashed var(--pink-mid); }
+    .cal-cell.ovulation { background: #e1bee7; color: var(--purple); font-weight: 700; }
+    .cal-cell.today { font-weight: 700; box-shadow: 0 0 0 2px var(--pink); }
+    .cal-day-label { font-size: 0.7rem; color: var(--muted); text-align: center; font-weight: 600; padding: 4px 0; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+    .stat-box { background: var(--pink-light); border-radius: 10px; padding: 1rem; text-align: center; }
+    .stat-box .num { font-size: 2rem; font-weight: 700; color: var(--pink); }
+    .stat-box .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+    @media(max-width:600px) { header { padding: 1rem; } main { margin: 1rem auto; } .row > * { min-width: 100%; } }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🌸 Days Tracker</h1>
+    <p>Your private menstrual cycle companion</p>
+  </div>
+</header>
+
+<nav class="nav">
+  <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+  <button onclick="showTab('log-cycle')">Log Period</button>
+  <button onclick="showTab('symptoms')">Symptoms</button>
+  <button onclick="showTab('calendar')">Calendar</button>
+  <button onclick="showTab('history')">History</button>
+</nav>
+
+<main>
+  <div id="alert-box" class="hidden"></div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard">
+    <div class="card">
+      <h2>🔮 Next Period Prediction</h2>
+      <div id="prediction-area"><p style="color:var(--muted)">Loading...</p></div>
+    </div>
+    <div class="card">
+      <h2>📊 Cycle Statistics</h2>
+      <div class="stats-grid" id="stats-area"></div>
+    </div>
+    <div class="card">
+      <h2>🩺 Recent Symptoms</h2>
+      <div id="recent-symptoms"></div>
+    </div>
+  </div>
+
+  <!-- LOG CYCLE -->
+  <div id="tab-log-cycle" class="hidden">
+    <div class="card">
+      <h2>🩸 Log a Period</h2>
+      <div id="log-alert" class="hidden"></div>
+      <div class="row">
+        <div>
+          <label>Period Start Date *</label>
+          <input type="date" id="start-date" />
+        </div>
+        <div>
+          <label>Period End Date</label>
+          <input type="date" id="end-date" />
+        </div>
+      </div>
+      <label>Notes (optional)</label>
+      <textarea id="cycle-notes" rows="2" placeholder="Any notes about this cycle..."></textarea>
+      <br/><br/>
+      <button class="btn" onclick="logCycle()">Save Period</button>
+    </div>
+  </div>
+
+  <!-- SYMPTOMS -->
+  <div id="tab-symptoms" class="hidden">
+    <div class="card">
+      <h2>💊 Log a Symptom</h2>
+      <label>Date *</label>
+      <input type="date" id="sym-date" />
+      <label>Symptom *</label>
+      <div class="symptom-grid" id="symptom-picker"></div>
+      <label>Severity (1 = mild, 5 = severe)</label>
+      <div class="severity-row" id="severity-picker"></div>
+      <label>Notes</label>
+      <input type="text" id="sym-notes" placeholder="Optional notes..." />
+      <br/><br/>
+      <button class="btn" onclick="logSymptom()">Save Symptom</button>
+    </div>
+    <div class="card">
+      <h2>📋 Recent Symptom Log</h2>
+      <div id="symptom-history"></div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="tab-calendar" class="hidden">
+    <div class="card">
+      <h2>📅 Cycle Calendar</h2>
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">
+        <span class="badge" style="background:var(--pink);color:#fff">■ Period</span>
+        <span class="badge" style="background:var(--pink-light);color:var(--pink)">■ Predicted</span>
+        <span class="badge" style="background:#e1bee7;color:var(--purple)">■ Ovulation</span>
+      </div>
+      <div id="calendar-area"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="tab-history" class="hidden">
+    <div class="card">
+      <h2>📜 Cycle History</h2>
+      <ul class="cycle-list" id="cycle-list"><li style="color:var(--muted)">Loading...</li></ul>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = '/api';
+let cycles = [];
+let symptoms = [];
+let prediction = null;
+let selectedSymptom = null;
+let selectedSeverity = null;
+
+const SYMPTOM_TYPES = [
+  {key:'cramps',label:'Cramps'},{key:'headache',label:'Headache'},
+  {key:'bloating',label:'Bloating'},{key:'fatigue',label:'Fatigue'},
+  {key:'mood_swings',label:'Mood Swings'},{key:'breast_tenderness',label:'Breast Tenderness'},
+  {key:'acne',label:'Acne'},{key:'back_pain',label:'Back Pain'},
+  {key:'nausea',label:'Nausea'},{key:'spotting',label:'Spotting'},
+  {key:'flow_light',label:'Flow: Light'},{key:'flow_medium',label:'Flow: Medium'},
+  {key:'flow_heavy',label:'Flow: Heavy'},{key:'other',label:'Other'}
+];
+
+async function api(path, opts={}) {
+  const r = await fetch(API + path, { headers: {'Content-Type':'application/json'}, ...opts });
+  return r.json();
+}
+
+function showAlert(msg, type='success', el='alert-box') {
+  const box = document.getElementById(el);
+  box.className = `alert alert-${type}`;
+  box.textContent = msg;
+  setTimeout(() => { box.className = 'hidden'; }, 4000);
+}
+
+function showTab(tab) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  document.querySelectorAll('.nav button').forEach((b,i) => {
+    const tabs = ['dashboard','log-cycle','symptoms','calendar','history'];
+    b.classList.toggle('active', tabs[i] === tab);
+  });
+  if (tab === 'dashboard') loadDashboard();
+  if (tab === 'history') loadHistory();
+  if (tab === 'symptoms') loadSymptomHistory();
+  if (tab === 'calendar') renderCalendar();
+}
+
+async function loadDashboard() {
+  [cycles, prediction] = await Promise.all([
+    api('/cycles'),
+    api('/cycles/predict/next')
+  ]);
+  symptoms = await api('/symptoms?from=' + nDaysAgo(30));
+
+  // Prediction
+  const pred = prediction.prediction;
+  const pa = document.getElementById('prediction-area');
+  if (pred) {
+    pa.innerHTML = `
+      <div class="prediction-box">
+        <div class="row">
+          <div><div class="label">Next Period Starts</div><div class="big">${formatDate(pred.next_period_start)}</div></div>
+          <div><div class="label">Expected End</div><div class="big">${formatDate(pred.next_period_end)}</div></div>
+          <div><div class="label">Ovulation</div><div class="big">${formatDate(pred.ovulation_date)}</div></div>
+        </div>
+        <div style="margin-top:0.8rem;font-size:0.82rem;color:var(--muted)">
+          Avg cycle: <strong>${pred.avg_cycle_length} days</strong> &nbsp;|
+          Avg period: <strong>${pred.avg_period_length} days</strong> &nbsp;|
+          Based on <strong>${pred.based_on_cycles}</strong> cycles
+        </div>
+      </div>`;
+  } else {
+    pa.innerHTML = `<p style="color:var(--muted)">Log at least 2 periods to see predictions.</p>`;
+  }
+
+  // Stats
+  const logs = cycles.length;
+  const avgCycle = cycles.filter(c=>c.cycle_length).length
+    ? Math.round(cycles.filter(c=>c.cycle_length).reduce((s,c)=>s+c.cycle_length,0)/cycles.filter(c=>c.cycle_length).length)
+    : '—';
+  const avgPeriod = cycles.filter(c=>c.period_length).length
+    ? Math.round(cycles.filter(c=>c.period_length).reduce((s,c)=>s+c.period_length,0)/cycles.filter(c=>c.period_length).length)
+    : '—';
+  document.getElementById('stats-area').innerHTML = `
+    <div class="stat-box"><div class="num">${logs}</div><div class="lbl">Cycles Logged</div></div>
+    <div class="stat-box"><div class="num">${avgCycle}</div><div class="lbl">Avg Cycle (days)</div></div>
+    <div class="stat-box"><div class="num">${avgPeriod}</div><div class="lbl">Avg Period (days)</div></div>
+    <div class="stat-box"><div class="num">${symptoms.length}</div><div class="lbl">Symptoms (30d)</div></div>`;
+
+  // Recent symptoms
+  const rs = document.getElementById('recent-symptoms');
+  if (symptoms.length === 0) { rs.innerHTML = '<p style="color:var(--muted)">No symptoms logged in the last 30 days.</p>'; return; }
+  rs.innerHTML = symptoms.slice(0,5).map(s => `
+    <div class="symptom-log-item">
+      <div><span class="badge">${label(s.type)}</span> ${s.severity ? '&nbsp;Severity: '+s.severity : ''}</div>
+      <div style="font-size:0.8rem;color:var(--muted)">${formatDate(s.date)}</div>
+    </div>`).join('');
+}
+
+async function loadHistory() {
+  cycles = await api('/cycles');
+  const list = document.getElementById('cycle-list');
+  if (!cycles.length) { list.innerHTML = '<li style="color:var(--muted)">No cycles logged yet.</li>'; return; }
+  list.innerHTML = cycles.map(c => `
+    <li class="cycle-item">
+      <div>
+        <div class="dates">${formatDate(c.start_date)}${c.end_date ? ' → ' + formatDate(c.end_date) : ''}</div>
+        <div class="meta">
+          ${c.period_length ? 'Period: '+c.period_length+' days' : 'End date not set'}
+          ${c.cycle_length ? ' &nbsp;|&nbsp; Cycle: '+c.cycle_length+' days' : ''}
+          ${c.notes ? ' &nbsp;|&nbsp; '+c.notes : ''}
+        </div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="deleteCycle('${c.id}')">Delete</button>
+    </li>`).join('');
+}
+
+async function deleteCycle(id) {
+  if (!confirm('Delete this cycle record?')) return;
+  await api('/cycles/'+id, {method:'DELETE'});
+  showAlert('Cycle deleted.');
+  loadHistory();
+}
+
+async function logCycle() {
+  const start = document.getElementById('start-date').value;
+  const end = document.getElementById('end-date').value;
+  const notes = document.getElementById('cycle-notes').value;
+  if (!start) { showAlert('Please enter a start date.', 'error', 'log-alert'); return; }
+  document.getElementById('log-alert').className = 'hidden';
+  const r = await api('/cycles', {method:'POST', body: JSON.stringify({start_date:start, end_date:end||undefined, notes})});
+  if (r.error) { showAlert(r.error, 'error', 'log-alert'); return; }
+  showAlert('Period logged! 🌸', 'success', 'log-alert');
+  document.getElementById('start-date').value = '';
+  document.getElementById('end-date').value = '';
+  document.getElementById('cycle-notes').value = '';
+}
+
+function buildSymptomPicker() {
+  const picker = document.getElementById('symptom-picker');
+  picker.innerHTML = SYMPTOM_TYPES.map(s =>
+    `<button class="symptom-btn" onclick="selectSymptom('${s.key}', this)">${s.label}</button>`
+  ).join('');
+  const sevPicker = document.getElementById('severity-picker');
+  sevPicker.innerHTML = [1,2,3,4,5].map(n =>
+    `<button class="sev-btn" onclick="selectSeverity(${n}, this)">${n}</button>`
+  ).join('');
+  document.getElementById('sym-date').value = new Date().toISOString().split('T')[0];
+}
+
+function selectSymptom(key, btn) {
+  selectedSymptom = key;
+  document.querySelectorAll('.symptom-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function selectSeverity(n, btn) {
+  selectedSeverity = n;
+  document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+async function logSymptom() {
+  const date = document.getElementById('sym-date').value;
+  const notes = document.getElementById('sym-notes').value;
+  if (!date || !selectedSymptom) { showAlert('Please select a date and symptom.', 'error'); return; }
+  const r = await api('/symptoms', {method:'POST', body:JSON.stringify({date, type:selectedSymptom, severity:selectedSeverity, notes})});
+  if (r.error) { showAlert(r.error, 'error'); return; }
+  showAlert('Symptom saved! 💊');
+  selectedSymptom = null; selectedSeverity = null;
+  document.querySelectorAll('.symptom-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('sym-notes').value = '';
+  loadSymptomHistory();
+}
+
+async function loadSymptomHistory() {
+  symptoms = await api('/symptoms?from=' + nDaysAgo(60));
+  const area = document.getElementById('symptom-history');
+  if (!symptoms.length) { area.innerHTML = '<p style="color:var(--muted)">No symptoms logged.</p>'; return; }
+  area.innerHTML = symptoms.map(s =>
+    `<div class="symptom-log-item">
+      <div><span class="badge">${label(s.type)}</span>${s.severity ? ' Sev: '+s.severity : ''}${s.notes ? ' — '+s.notes : ''}</div>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <span style="font-size:0.78rem;color:var(--muted)">${formatDate(s.date)}</span>
+        <button class="btn btn-sm btn-outline" onclick="deleteSymptom('${s.id}')">×</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+async function deleteSymptom(id) {
+  await api('/symptoms/'+id, {method:'DELETE'});
+  loadSymptomHistory();
+}
+
+async function renderCalendar() {
+  [cycles, prediction] = await Promise.all([api('/cycles'), api('/cycles/predict/next')]);
+  const area = document.getElementById('calendar-area');
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  // Build sets of special dates
+  const periodDates = new Set();
+  cycles.forEach(c => {
+    const start = new Date(c.start_date);
+    const end = c.end_date ? new Date(c.end_date) : new Date(start.getTime() + 4*86400000);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+      periodDates.add(d.toISOString().split('T')[0]);
+    }
+  });
+
+  const predictedDates = new Set();
+  let ovulationDate = null;
+  if (prediction.prediction) {
+    const ps = new Date(prediction.prediction.next_period_start);
+    const pe = new Date(prediction.prediction.next_period_end);
+    for (let d = new Date(ps); d <= pe; d.setDate(d.getDate()+1)) {
+      predictedDates.add(d.toISOString().split('T')[0]);
+    }
+    ovulationDate = prediction.prediction.ovulation_date;
+  }
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const monthName = now.toLocaleString('default', {month:'long', year:'numeric'});
+  const todayStr = now.toISOString().split('T')[0];
+  const DAY_LABELS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  let html = `<div style="font-weight:700;font-size:1rem;color:var(--pink);margin-bottom:0.8rem">${monthName}</div>`;
+  html += '<div class="calendar-grid">';
+  DAY_LABELS.forEach(d => html += `<div class="cal-day-label">${d}</div>`);
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls = 'cal-cell';
+    if (dateStr === todayStr) cls += ' today';
+    if (periodDates.has(dateStr)) cls += ' period';
+    else if (dateStr === ovulationDate) cls += ' ovulation';
+    else if (predictedDates.has(dateStr)) cls += ' predicted';
+    html += `<div class="${cls}">${d}</div>`;
+  }
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function label(key) {
+  return (SYMPTOM_TYPES.find(s=>s.key===key)||{label:key}).label;
+}
+
+function nDaysAgo(n) {
+  const d = new Date(); d.setDate(d.getDate()-n);
+  return d.toISOString().split('T')[0];
+}
+
+// Init
+buildSymptomPicker();
+loadDashboard();
+</script>
+</body>
+</html>
